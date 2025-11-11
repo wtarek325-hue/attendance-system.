@@ -1,0 +1,308 @@
+// إدارة الحضور
+
+let allAttendance = [];
+let filteredAttendance = [];
+let allEmployees = [];
+
+// تحميل البيانات
+function loadAttendanceData() {
+    allAttendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+    filteredAttendance = [...allAttendance];
+    
+    initializeAttendanceForm();
+    displayAttendanceRecords();
+    updateAttendanceFilters();
+}
+
+// تهيئة نموذج تسجيل الحضور
+function initializeAttendanceForm() {
+    const dateInput = document.getElementById('attendanceDate');
+    const timeInput = document.getElementById('attendanceTime');
+    const locationSelect = document.getElementById('attendanceLocation');
+    const employeeSelect = document.getElementById('attendanceEmployee');
+    
+    // تعيين التاريخ والوقت الحالي
+    const now = new Date();
+    dateInput.value = now.toISOString().split('T')[0];
+    timeInput.value = now.toTimeString().substring(0, 5);
+    
+    // تعبئة خيارات الموقع
+    const locations = [...new Set(allEmployees.map(emp => emp.location))];
+    locationSelect.innerHTML = '<option value="">اختر الموقع</option>';
+    locations.forEach(location => {
+        locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+    });
+    
+    // تحديث قائمة الموظفين عند تغيير الموقع
+    locationSelect.addEventListener('change', updateEmployeeList);
+    
+    // التحديث الأولي لقائمة الموظفين
+    updateEmployeeList();
+}
+
+// تحديث قائمة الموظفين حسب الموقع
+function updateEmployeeList() {
+    const locationSelect = document.getElementById('attendanceLocation');
+    const employeeSelect = document.getElementById('attendanceEmployee');
+    const selectedLocation = locationSelect.value;
+    
+    employeeSelect.innerHTML = '<option value="">اختر الموظف</option>';
+    
+    const filteredEmployees = selectedLocation ? 
+        allEmployees.filter(emp => emp.location === selectedLocation) : 
+        allEmployees;
+    
+    filteredEmployees.forEach(employee => {
+        employeeSelect.innerHTML += `<option value="${employee.id}">${employee.name}</option>`;
+    });
+}
+
+// تسجيل الحضور
+function recordAttendance(event) {
+    event.preventDefault();
+    
+    const date = document.getElementById('attendanceDate').value;
+    const location = document.getElementById('attendanceLocation').value;
+    const employeeId = document.getElementById('attendanceEmployee').value;
+    const time = document.getElementById('attendanceTime').value;
+    
+    const employee = allEmployees.find(emp => emp.id === employeeId);
+    if (!employee) {
+        alert('الموظف غير موجود');
+        return;
+    }
+    
+    // التحقق من تكرار الحضور
+    const existingAttendance = allAttendance.find(record => 
+        record.employeeId === employeeId && 
+        record.date === date && 
+        record.location === location
+    );
+    
+    if (existingAttendance) {
+        const confirmMessage = `الموظف ${employee.name} مسجل حضور في هذا اليوم في الموقع ${location}. هل تريد تسجيل الحضور مرة أخرى؟`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+    }
+    
+    // تسجيل الحضور
+    const attendanceRecord = {
+        id: generateId('att_'),
+        employeeId: employeeId,
+        employeeName: employee.name,
+        date: date,
+        time: time,
+        location: location,
+        company: employee.company,
+        recordedBy: getCurrentUser().name,
+        recordedAt: new Date().toISOString()
+    };
+    
+    allAttendance.push(attendanceRecord);
+    localStorage.setItem('attendance', JSON.stringify(allAttendance));
+    
+    // إعادة تحميل البيانات
+    loadAttendanceData();
+    resetForm('attendanceForm');
+    
+    showNotification('تم تسجيل الحضور بنجاح');
+}
+
+// عرض سجلات الحضور
+function displayAttendanceRecords() {
+    const tbody = document.getElementById('attendanceTableBody');
+    tbody.innerHTML = '';
+
+    filteredAttendance.forEach(record => {
+        const employee = allEmployees.find(emp => emp.id === record.employeeId);
+        const isDuplicate = allAttendance.filter(r => 
+            r.employeeId === record.employeeId && 
+            r.date === record.date
+        ).length > 1;
+        
+        const row = document.createElement('tr');
+        row.className = isDuplicate ? 'duplicate-record' : '';
+        row.innerHTML = `
+            <td>${formatDate(record.date)}</td>
+            <td>${record.employeeName}</td>
+            <td>${record.location}</td>
+            <td>${record.time}</td>
+            <td>
+                ${isDuplicate ? 
+                    '<span style="color: red; font-weight: bold;">مكرر</span>' : 
+                    '<span style="color: green;">عادي</span>'
+                }
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// تحديث فلاتر الحضور
+function updateAttendanceFilters() {
+    const locationSelect = document.getElementById('filterAttendanceLocation');
+    const reportLocationSelect = document.getElementById('reportLocation');
+    
+    const locations = [...new Set(allEmployees.map(emp => emp.location))];
+    
+    // تحديث فلتر سجلات الحضور
+    locationSelect.innerHTML = '<option value="">جميع المواقع</option>';
+    locations.forEach(location => {
+        locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+    });
+    
+    // تحديث فلتر التقارير
+    reportLocationSelect.innerHTML = '<option value="">جميع المواقع</option>';
+    locations.forEach(location => {
+        reportLocationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+    });
+}
+
+// تصفية سجلات الحضور
+function filterAttendanceRecords() {
+    const dateFilter = document.getElementById('filterAttendanceDate').value;
+    const locationFilter = document.getElementById('filterAttendanceLocation').value;
+    
+    filteredAttendance = allAttendance.filter(record => {
+        const matchesDate = !dateFilter || record.date === dateFilter;
+        const matchesLocation = !locationFilter || record.location === locationFilter;
+        
+        return matchesDate && matchesLocation;
+    });
+    
+    displayAttendanceRecords();
+}
+
+// إدارة التبويبات
+function openTab(tabName) {
+    // إخفاء جميع المحتويات
+    const tabContents = document.getElementsByClassName('tab-content');
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove('active');
+    }
+    
+    // إلغاء تنشيط جميع الأزرار
+    const tabs = document.getElementsByClassName('tab');
+    for (let i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+    }
+    
+    // إظهار المحتوى المحدد
+    document.getElementById(tabName).classList.add('active');
+    event.currentTarget.classList.add('active');
+    
+    // إذا كان التبويب هو إجمالي الحضور، قم بتحميل التقرير
+    if (tabName === 'summaryTab') {
+        generateAttendanceReport();
+    }
+}
+
+// توليد تقرير الحضور
+function generateAttendanceReport() {
+    const fromDate = document.getElementById('reportFromDate').value;
+    const toDate = document.getElementById('reportToDate').value;
+    const locationFilter = document.getElementById('reportLocation').value;
+    
+    let filteredRecords = [...allAttendance];
+    
+    // تطبيق الفلاتر
+    if (fromDate) {
+        filteredRecords = filteredRecords.filter(record => record.date >= fromDate);
+    }
+    
+    if (toDate) {
+        filteredRecords = filteredRecords.filter(record => record.date <= toDate);
+    }
+    
+    if (locationFilter) {
+        filteredRecords = filteredRecords.filter(record => record.location === locationFilter);
+    }
+    
+    // تجميع البيانات حسب الموظف
+    const employeeSummary = {};
+    
+    filteredRecords.forEach(record => {
+        if (!employeeSummary[record.employeeId]) {
+            const employee = allEmployees.find(emp => emp.id === record.employeeId);
+            employeeSummary[record.employeeId] = {
+                employeeName: record.employeeName,
+                location: record.location,
+                totalDays: 0,
+                daysByLocation: {}
+            };
+        }
+        
+        employeeSummary[record.employeeId].totalDays++;
+        
+        if (!employeeSummary[record.employeeId].daysByLocation[record.location]) {
+            employeeSummary[record.employeeId].daysByLocation[record.location] = 0;
+        }
+        employeeSummary[record.employeeId].daysByLocation[record.location]++;
+    });
+    
+    // عرض التقرير
+    displayAttendanceReport(employeeSummary);
+}
+
+// عرض تقرير الحضور
+function displayAttendanceReport(summary) {
+    const tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = '';
+    
+    for (let employeeId in summary) {
+        const data = summary[employeeId];
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${data.employeeName}</td>
+            <td>${data.location}</td>
+            <td>${data.totalDays}</td>
+            <td>${Object.values(data.daysByLocation).reduce((a, b) => a + b, 0)}</td>
+            <td>100%</td>
+        `;
+        
+        tbody.appendChild(row);
+    }
+}
+
+// تصدير تقرير الحضور
+function exportAttendanceReport() {
+    const fromDate = document.getElementById('reportFromDate').value;
+    const toDate = document.getElementById('reportToDate').value;
+    const locationFilter = document.getElementById('reportLocation').value;
+    
+    let filteredRecords = [...allAttendance];
+    
+    // تطبيق نفس الفلاتر
+    if (fromDate) {
+        filteredRecords = filteredRecords.filter(record => record.date >= fromDate);
+    }
+    
+    if (toDate) {
+        filteredRecords = filteredRecords.filter(record => record.date <= toDate);
+    }
+    
+    if (locationFilter) {
+        filteredRecords = filteredRecords.filter(record => record.location === locationFilter);
+    }
+    
+    // تحضير البيانات للتصدير
+    const exportData = filteredRecords.map(record => ({
+        'التاريخ': record.date,
+        'اسم الموظف': record.employeeName,
+        'الموقع': record.location,
+        'الشركة': record.company,
+        'وقت الحضور': record.time,
+        'مسجل بواسطة': record.recordedBy
+    }));
+    
+    exportToExcel(exportData, `تقرير_الحضور_${new Date().toISOString().split('T')[0]}`);
+}
+
+// تحميل البيانات عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    loadAttendanceData();
+});

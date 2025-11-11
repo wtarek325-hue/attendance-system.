@@ -1,0 +1,73 @@
+// إدارة لوحة التحكم
+
+// تحديث الإحصائيات في الوقت الحقيقي
+function updateRealTimeStats() {
+    updateDashboardStats();
+    
+    // تحديث كل 30 ثانية
+    setTimeout(updateRealTimeStats, 30000);
+}
+
+// تحميل بيانات الموظفين
+function loadEmployeesStats() {
+    const employees = JSON.parse(localStorage.getItem('employees') || '[]');
+    return employees;
+}
+
+// تحميل بيانات الحضور
+function loadAttendanceStats() {
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    return attendance;
+}
+
+// تحليل بيانات الحضور
+function analyzeAttendance() {
+    const employees = loadEmployeesStats();
+    const attendance = loadAttendanceStats();
+    const today = new Date().toISOString().split('T')[0];
+    
+    return {
+        totalEmployees: employees.length,
+        todayAttendance: attendance.filter(a => a.date === today).length,
+        monthlyAttendance: calculateMonthlyAttendance(attendance),
+        attendanceByLocation: calculateAttendanceByLocation(attendance, employees)
+    };
+}
+
+// حساب الحضور الشهري
+function calculateMonthlyAttendance(attendance) {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    
+    return attendance.filter(a => {
+        const recordDate = new Date(a.date);
+        return recordDate.getMonth() === currentMonth && 
+               recordDate.getFullYear() === currentYear;
+    }).length;
+}
+
+// حساب الحضور حسب الموقع
+function calculateAttendanceByLocation(attendance, employees) {
+    const locationMap = {};
+    
+    attendance.forEach(record => {
+        const employee = employees.find(emp => emp.id === record.employeeId);
+        if (employee) {
+            if (!locationMap[employee.location]) {
+                locationMap[employee.location] = 0;
+            }
+            locationMap[employee.location]++;
+        }
+    });
+    
+    return locationMap;
+}
+
+// تحديث الرسوم البيانية (يمكن تطويرها لاحقاً)
+function updateCharts() {
+    // يمكن إضافة مكتبة charts هنا لاحقاً
+    console.log('Updating charts...');
+}
+
+// بدء التحديث التلقائي
+updateRealTimeStats();

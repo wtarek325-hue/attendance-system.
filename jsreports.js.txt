@@ -1,0 +1,31 @@
+// التقارير والتحليلات
+function generateDetailedReport() {
+    const month = document.getElementById('reportMonth').value;
+    const employeeId = document.getElementById('reportEmployee').value;
+    
+    // تحليل البيانات وعرضها
+    let reportHTML = '<div class="report-section">';
+    reportHTML += '<h4>تفاصيل الحضور</h4>';
+    // إضافة البيانات...
+    reportHTML += '</div>';
+    
+    document.getElementById('reportResults').innerHTML = reportHTML;
+}
+
+// التحقق من تجاوز أيام العمل
+function checkOvertime(employeeId, month) {
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    const monthAttendance = attendance.filter(a => 
+        a.employeeId === employeeId && 
+        a.date.startsWith(month)
+    );
+    
+    const daysInMonth = new Date(month + '-01').getDate();
+    const attendanceDays = monthAttendance.length;
+    
+    if (attendanceDays > daysInMonth) {
+        return `تحذير: الموظف تجاوز العدد المسموح (${attendanceDays}/${daysInMonth})`;
+    }
+    
+    return `طبيعي (${attendanceDays}/${daysInMonth})`;
+}

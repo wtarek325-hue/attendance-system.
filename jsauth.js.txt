@@ -1,0 +1,192 @@
+// نظام المصادقة وإدارة المستخدمين
+
+// بيانات المستخدمين الافتراضية
+const DEFAULT_USERS = [
+    {
+        id: 1,
+        username: 'Walid.Tarek',
+        password: 'Wa123456',
+        name: 'وليد طارق',
+        role: 'admin',
+        email: 'Walid.Tarek@hr.com'
+    },
+    {
+        id: 2,
+        username: 'ahmed',
+        password: 'ahmed123',
+        name: 'أحمد محمد',
+        role: 'supervisor'
+    },
+    {
+        id: 3,
+        username: 'mohamed',
+        password: 'mohamed123',
+        name: 'محمد علي',
+        role: 'supervisor'
+    }
+];
+
+// تهيئة التخزين المحلي
+function initializeStorage() {
+    if (!localStorage.getItem('users')) {
+        localStorage.setItem('users', JSON.stringify(DEFAULT_USERS));
+    }
+    
+    if (!localStorage.getItem('employees')) {
+        localStorage.setItem('employees', JSON.stringify([]));
+    }
+    
+    if (!localStorage.getItem('attendance')) {
+        localStorage.setItem('attendance', JSON.stringify([]));
+    }
+    
+    if (!localStorage.getItem('nextEmployeeId')) {
+        localStorage.setItem('nextEmployeeId', '1');
+    }
+    
+    if (!localStorage.getItem('nextAttendanceId')) {
+        localStorage.setItem('nextAttendanceId', '1');
+    }
+}
+
+// تسجيل الدخول
+function login(username, password) {
+    const users = JSON.parse(localStorage.getItem('users'));
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+        // حفظ بيانات الجلسة
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+        return { success: true, user };
+    } else {
+        return { success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+    }
+}
+
+// تسجيل الخروج
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
+}
+
+// التحقق من حالة تسجيل الدخول
+function checkAuth() {
+    const currentUser = sessionStorage.getItem('currentUser');
+    
+    if (!currentUser && !window.location.href.includes('login.html')) {
+        window.location.href = 'login.html';
+        return null;
+    }
+    
+    return currentUser ? JSON.parse(currentUser) : null;
+}
+
+// الحصول على المستخدم الحالي
+function getCurrentUser() {
+    const user = sessionStorage.getItem('currentUser');
+    return user ? JSON.parse(user) : null;
+}
+
+// التحقق من الصلاحيات
+function hasPermission(requiredRole) {
+    const user = getCurrentUser();
+    if (!user) return false;
+    
+    if (requiredRole === 'admin') {
+        return user.role === 'admin';
+    }
+    
+    return true; // المشرفين يمكنهم الوصول لجميع الصفحات ما عدا صفحة المستخدمين
+}
+
+// إظهار/إخفاء العناصر حسب الصلاحيات
+function applyPermissions() {
+    const user = getCurrentUser();
+    if (!user) return;
+    
+    if (user.role === 'admin') {
+        document.body.classList.add('user-admin');
+    }
+}
+
+// تهيئة الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStorage();
+    
+    // صفحة تسجيل الدخول
+    if (window.location.href.includes('login.html')) {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const errorMessage = document.getElementById('errorMessage');
+                
+                const result = login(username, password);
+                
+                if (result.success) {
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorMessage.textContent = result.message;
+                    errorMessage.style.display = 'block';
+                    
+                    // إخفاء رسالة الخطأ بعد 3 ثواني
+                    setTimeout(() => {
+                        errorMessage.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        }
+    } else {
+        // الصفحات الأخرى
+        const user = checkAuth();
+        if (user) {
+            // تحديث اسم المستخدم في الواجهة
+            const userNameElements = document.querySelectorAll('#userName, #welcomeMessage');
+            userNameElements.forEach(element => {
+                if (element.id === 'welcomeMessage') {
+                    element.textContent = `مرحباً ${user.name}`;
+                } else {
+                    element.textContent = user.name;
+                }
+            });
+            
+            // تحديث دور المستخدم
+            const userRoleElement = document.getElementById('userRole');
+            if (userRoleElement) {
+                userRoleElement.textContent = user.role === 'admin' ? 'مسؤول' : 'مشرف';
+            }
+            
+            // تطبيق الصلاحيات
+            applyPermissions();
+            
+            // تحديث التاريخ الحالي
+            const currentDateElement = document.getElementById('currentDate');
+            if (currentDateElement) {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                currentDateElement.textContent = now.toLocaleDateString('ar-EG', options);
+            }
+        }
+    }
+});
+
+// إظهار إشعار
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}

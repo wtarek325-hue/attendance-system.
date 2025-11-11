@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الحضور - نظام الحضور</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <!-- الشريط الجانبي -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-fingerprint"></i>
+                <span>نظام الحضور</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a href="employees.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>الموظفين</span>
+            </a>
+            <a href="attendance.html" class="nav-item active">
+                <i class="fas fa-calendar-check"></i>
+                <span>الحضور</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>التقارير</span>
+            </a>
+            <a href="users.html" class="nav-item admin-only">
+                <i class="fas fa-user-cog"></i>
+                <span>المستخدمين</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name" id="userName">مرحباً</span>
+                    <span class="user-role" id="userRole">مستخدم</span>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                تسجيل الخروج
+            </button>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main-content">
+        <header class="content-header">
+            <h1>إدارة الحضور</h1>
+            <div class="header-actions">
+                <div class="date-display">
+                    <i class="fas fa-calendar"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- التبويبات -->
+            <div class="tabs-container animated-card">
+                <div class="tabs">
+                    <button class="tab active" onclick="openTab('attendanceTab')">تسجيل الحضور</button>
+                    <button class="tab" onclick="openTab('summaryTab')">إجمالي الحضور</button>
+                </div>
+
+                <!-- تبويب تسجيل الحضور -->
+                <div id="attendanceTab" class="tab-content active">
+                    <!-- نموذج تسجيل الحضور -->
+                    <div class="form-container">
+                        <h3>تسجيل حضور جديد</h3>
+                        <form id="attendanceForm" onsubmit="recordAttendance(event)">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="attendanceDate">التاريخ</label>
+                                    <input type="date" id="attendanceDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="attendanceLocation">الموقع</label>
+                                    <select id="attendanceLocation" required>
+                                        <option value="">اختر الموقع</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="attendanceEmployee">الموظف</label>
+                                    <select id="attendanceEmployee" required>
+                                        <option value="">اختر الموظف</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="attendanceTime">وقت الحضور</label>
+                                    <input type="time" id="attendanceTime" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check"></i>
+                                    تسجيل الحضور
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- فلترة سجلات الحضور -->
+                    <div class="form-container">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="filterAttendanceDate">تصفية بالتاريخ</label>
+                                <input type="date" id="filterAttendanceDate" onchange="filterAttendanceRecords()">
+                            </div>
+                            <div class="form-group">
+                                <label for="filterAttendanceLocation">تصفية بالموقع</label>
+                                <select id="filterAttendanceLocation" onchange="filterAttendanceRecords()">
+                                    <option value="">جميع المواقع</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- جدول سجلات الحضور -->
+                    <div class="table-container">
+                        <table class="data-table" id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>اسم الموظف</th>
+                                    <th>الموقع</th>
+                                    <th>وقت الحضور</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <!-- سيتم ملؤها بالبيانات -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- تبويب إجمالي الحضور -->
+                <div id="summaryTab" class="tab-content">
+                    <!-- فلترة التقرير -->
+                    <div class="form-container">
+                        <h3>فلترة التقرير</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="reportFromDate">من تاريخ</label>
+                                <input type="date" id="reportFromDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="reportToDate">إلى تاريخ</label>
+                                <input type="date" id="reportToDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="reportLocation">الموقع</label>
+                                <select id="reportLocation">
+                                    <option value="">جميع المواقع</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="generateAttendanceReport()">
+                                <i class="fas fa-chart-bar"></i>
+                                عرض التقرير
+                            </button>
+                            <button class="btn btn-success" onclick="exportAttendanceReport()">
+                                <i class="fas fa-download"></i>
+                                تصدير Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- جدول إجمالي الحضور -->
+                    <div class="table-container">
+                        <table class="data-table" id="summaryTable">
+                            <thead>
+                                <tr>
+                                    <th>اسم الموظف</th>
+                                    <th>الموقع</th>
+                                    <th>إجمالي الأيام</th>
+                                    <th>أيام الحضور</th>
+                                    <th>نسبة الحضور</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summaryTableBody">
+                                <!-- سيتم ملؤها بالبيانات -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/attendance.js"></script>
+</body>
+</html>

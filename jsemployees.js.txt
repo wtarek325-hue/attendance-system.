@@ -1,0 +1,284 @@
+// إدارة الموظفين
+
+let allEmployees = [];
+let filteredEmployees = [];
+
+// تحميل الموظفين
+function loadEmployees() {
+    allEmployees = JSON.parse(localStorage.getItem('employees') || '[]');
+    filteredEmployees = [...allEmployees];
+    displayEmployees();
+    updateFilters();
+}
+
+// عرض الموظفين في الجدول
+function displayEmployees() {
+    const tbody = document.getElementById('employeesTableBody');
+    tbody.innerHTML = '';
+
+    filteredEmployees.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${employee.nationalId}</td>
+            <td>${employee.name}</td>
+            <td>${employee.job}</td>
+            <td>${employee.shift}</td>
+            <td>${employee.location}</td>
+            <td>${employee.company}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="editEmployee('${employee.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${employee.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="transferEmployee('${employee.id}')">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// تحديث خيارات الفلترة
+function updateFilters() {
+    const locationSelect = document.getElementById('filterLocation');
+    const companySelect = document.getElementById('filterCompany');
+    
+    // الحصول على القيم الفريدة
+    const locations = [...new Set(allEmployees.map(emp => emp.location))];
+    const companies = [...new Set(allEmployees.map(emp => emp.company))];
+    
+    // تحديث خيارات الموقع
+    locationSelect.innerHTML = '<option value="">جميع المواقع</option>';
+    locations.forEach(location => {
+        locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+    });
+    
+    // تحديث خيارات الشركة
+    companySelect.innerHTML = '<option value="">جميع الشركات</option>';
+    companies.forEach(company => {
+        companySelect.innerHTML += `<option value="${company}">${company}</option>`;
+    });
+}
+
+// تصفية الموظفين
+function filterEmployees() {
+    const locationFilter = document.getElementById('filterLocation').value;
+    const companyFilter = document.getElementById('filterCompany').value;
+    const searchFilter = document.getElementById('searchEmployee').value.toLowerCase();
+    
+    filteredEmployees = allEmployees.filter(employee => {
+        const matchesLocation = !locationFilter || employee.location === locationFilter;
+        const matchesCompany = !companyFilter || employee.company === companyFilter;
+        const matchesSearch = !searchFilter || 
+                            employee.name.toLowerCase().includes(searchFilter) ||
+                            employee.nationalId.includes(searchFilter);
+        
+        return matchesLocation && matchesCompany && matchesSearch;
+    });
+    
+    displayEmployees();
+}
+
+// إظهار نموذج الإضافة
+function showAddForm() {
+    document.getElementById('addEmployeeForm').style.display = 'block';
+    document.getElementById('importEmployeeForm').style.display = 'none';
+}
+
+// إخفاء نموذج الإضافة
+function hideAddForm() {
+    document.getElementById('addEmployeeForm').style.display = 'none';
+    resetForm('employeeForm');
+}
+
+// إظهار نموذج الاستيراد
+function showImportForm() {
+    document.getElementById('importEmployeeForm').style.display = 'block';
+    document.getElementById('addEmployeeForm').style.display = 'none';
+}
+
+// إخفاء نموذج الاستيراد
+function hideImportForm() {
+    document.getElementById('importEmployeeForm').style.display = 'none';
+}
+
+// إضافة موظف جديد
+function addEmployee(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const employee = {
+        id: generateId('emp_'),
+        nationalId: formData.get('nationalId'),
+        name: formData.get('name'),
+        job: formData.get('job'),
+        shift: formData.get('shift'),
+        location: formData.get('location'),
+        company: formData.get('company'),
+        createdAt: new Date().toISOString()
+    };
+    
+    // التحقق من البيانات
+    const errors = validateEmployeeData(employee);
+    if (errors.length > 0) {
+        alert('يوجد أخطاء في البيانات:\n' + errors.join('\n'));
+        return;
+    }
+    
+    // التحقق من عدم تكرار الرقم القومي
+    const existingEmployee = allEmployees.find(emp => emp.nationalId === employee.nationalId);
+    if (existingEmployee) {
+        alert('الرقم القومي مسجل مسبقاً');
+        return;
+    }
+    
+    // إضافة الموظف
+    allEmployees.push(employee);
+    localStorage.setItem('employees', JSON.stringify(allEmployees));
+    
+    // إعادة تحميل البيانات
+    loadEmployees();
+    hideAddForm();
+    
+    showNotification('تم إضافة الموظف بنجاح');
+}
+
+// استيراد الموظفين من Excel
+function importEmployees() {
+    const fileInput = document.getElementById('excelFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('يرجى اختيار ملف Excel');
+        return;
+    }
+    
+    handleExcelUpload(file, function(data) {
+        let importedCount = 0;
+        let errorCount = 0;
+        
+        data.forEach((row, index) => {
+            const employee = {
+                id: generateId('emp_'),
+                nationalId: row['الرقم القومي'] || row['nationalId'],
+                name: row['الاسم'] || row['name'],
+                job: row['المهنة'] || row['job'],
+                shift: row['الشفت'] || row['shift'] || 'صباحي',
+                location: row['الموقع'] || row['location'],
+                company: row['الشركة'] || row['company'],
+                createdAt: new Date().toISOString()
+            };
+            
+            // التحقق من البيانات
+            const errors = validateEmployeeData(employee);
+            if (errors.length === 0) {
+                // التحقق من عدم التكرار
+                const existingEmployee = allEmployees.find(emp => emp.nationalId === employee.nationalId);
+                if (!existingEmployee) {
+                    allEmployees.push(employee);
+                    importedCount++;
+                } else {
+                    errorCount++;
+                    console.log(`موظف مكرر: ${employee.nationalId}`);
+                }
+            } else {
+                errorCount++;
+                console.log(`خطأ في الصف ${index + 1}:`, errors);
+            }
+        });
+        
+        // حفظ البيانات
+        localStorage.setItem('employees', JSON.stringify(allEmployees));
+        loadEmployees();
+        hideImportForm();
+        
+        showNotification(`تم استيراد ${importedCount} موظف بنجاح. ${errorCount} أخطاء`);
+    });
+}
+
+// تعديل موظف
+function editEmployee(employeeId) {
+    const employee = allEmployees.find(emp => emp.id === employeeId);
+    if (!employee) return;
+    
+    // تعبئة النموذج
+    document.getElementById('editEmployeeId').value = employee.id;
+    document.getElementById('editNationalId').value = employee.nationalId;
+    document.getElementById('editName').value = employee.name;
+    document.getElementById('editJob').value = employee.job;
+    document.getElementById('editShift').value = employee.shift;
+    document.getElementById('editLocation').value = employee.location;
+    document.getElementById('editCompany').value = employee.company;
+    
+    // إظهار النموذج
+    document.getElementById('editModal').style.display = 'block';
+}
+
+// حفظ التعديلات
+document.getElementById('editEmployeeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const employeeId = document.getElementById('editEmployeeId').value;
+    const employeeIndex = allEmployees.findIndex(emp => emp.id === employeeId);
+    
+    if (employeeIndex !== -1) {
+        allEmployees[employeeIndex] = {
+            ...allEmployees[employeeIndex],
+            nationalId: document.getElementById('editNationalId').value,
+            name: document.getElementById('editName').value,
+            job: document.getElementById('editJob').value,
+            shift: document.getElementById('editShift').value,
+            location: document.getElementById('editLocation').value,
+            company: document.getElementById('editCompany').value
+        };
+        
+        localStorage.setItem('employees', JSON.stringify(allEmployees));
+        loadEmployees();
+        closeEditModal();
+        
+        showNotification('تم تعديل بيانات الموظف بنجاح');
+    }
+});
+
+// إغلاق نافذة التعديل
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// حذف موظف
+function deleteEmployee(employeeId) {
+    if (confirm('هل أنت متأكد من حذف هذا الموظف؟')) {
+        allEmployees = allEmployees.filter(emp => emp.id !== employeeId);
+        localStorage.setItem('employees', JSON.stringify(allEmployees));
+        loadEmployees();
+        
+        showNotification('تم حذف الموظف بنجاح');
+    }
+}
+
+// نقل موظف
+function transferEmployee(employeeId) {
+    const employee = allEmployees.find(emp => emp.id === employeeId);
+    if (!employee) return;
+    
+    const newLocation = prompt(`نقل الموظف ${employee.name} إلى موقع جديد:`, employee.location);
+    const newCompany = prompt(`نقل الموظف ${employee.name} إلى شركة جديدة:`, employee.company);
+    
+    if (newLocation !== null || newCompany !== null) {
+        if (newLocation) employee.location = newLocation;
+        if (newCompany) employee.company = newCompany;
+        
+        localStorage.setItem('employees', JSON.stringify(allEmployees));
+        loadEmployees();
+        
+        showNotification('تم نقل الموظف بنجاح');
+    }
+}
+
+// تحميل البيانات عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    loadEmployees();
+});

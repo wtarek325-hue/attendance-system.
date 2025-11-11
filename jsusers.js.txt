@@ -1,0 +1,38 @@
+// إدارة المستخدمين
+function loadUsers() {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const tbody = document.getElementById('usersTable');
+    
+    tbody.innerHTML = users.map(user => `
+        <tr>
+            <td>${user.username}</td>
+            <td>${user.name}</td>
+            <td>${user.role === 'admin' ? 'مسؤول' : 'مشرف'}</td>
+            <td>
+                <button onclick="editUser('${user.id}')" class="btn btn-warning">تعديل</button>
+                <button onclick="deleteUser('${user.id}')" class="btn btn-danger">حذف</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showAddUserForm() {
+    // عرض نموذج إضافة مستخدم
+    const formHTML = `
+        <div class="form-container">
+            <h3>إضافة مستخدم جديد</h3>
+            <form onsubmit="addUser(event)">
+                <input type="text" placeholder="اسم المستخدم" required>
+                <input type="password" placeholder="كلمة المرور" required>
+                <input type="text" placeholder="الاسم الكامل" required>
+                <select>
+                    <option value="supervisor">مشرف</option>
+                    <option value="admin">مسؤول</option>
+                </select>
+                <button type="submit" class="btn btn-primary">حفظ</button>
+            </form>
+        </div>
+    `;
+    
+    document.querySelector('.content').innerHTML += formHTML;
+}

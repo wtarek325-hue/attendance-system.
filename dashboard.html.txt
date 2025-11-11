@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - نظام الحضور</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <!-- الشريط الجانبي -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-fingerprint"></i>
+                <span>نظام الحضور</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item active">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </a>
+            <a href="employees.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>الموظفين</span>
+            </a>
+            <a href="attendance.html" class="nav-item">
+                <i class="fas fa-calendar-check"></i>
+                <span>الحضور</span>
+            </a>
+            <a href="reports.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>التقارير</span>
+            </a>
+            <a href="users.html" class="nav-item admin-only">
+                <i class="fas fa-user-cog"></i>
+                <span>المستخدمين</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-details">
+                    <span class="user-name" id="userName">مرحباً</span>
+                    <span class="user-role" id="userRole">مستخدم</span>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                تسجيل الخروج
+            </button>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main-content">
+        <header class="content-header">
+            <h1 id="pageTitle">لوحة التحكم</h1>
+            <div class="header-actions">
+                <div class="date-display">
+                    <i class="fas fa-calendar"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- رسالة الترحيب -->
+            <div class="welcome-card animated-card">
+                <div class="welcome-content">
+                    <h2 id="welcomeMessage">مرحباً بك في نظام الحضور والانصراف</h2>
+                    <p>تم تصميم هذا النظام لمساعدة إدارة الموارد البشرية في متابعة حضور وانصراف الموظفين بشكل دقيق وفعال.</p>
+                </div>
+                <div class="welcome-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+
+            <!-- إحصائيات سريعة -->
+            <div class="stats-grid">
+                <div class="stat-card animated-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalEmployees">0</h3>
+                        <p>إجمالي الموظفين</p>
+                    </div>
+                </div>
+
+                <div class="stat-card animated-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalProjects">0</h3>
+                        <p>إجمالي المشاريع</p>
+                    </div>
+                </div>
+
+                <div class="stat-card animated-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayAttendance">0</h3>
+                        <p>حضور اليوم</p>
+                    </div>
+                </div>
+
+                <div class="stat-card animated-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="attendanceRate">0%</h3>
+                        <p>معدل الحضور</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- مقدمة عن النظام -->
+            <div class="intro-card animated-card">
+                <h3>مقدمة عن النظام</h3>
+                <p>تم إنشاء هذا النظام خصيصاً لمشاريع البنوك في العاصمة الإدارية الجديدة لتسهيل عملية متابعة حضور وانصراف الموظفين بدقة عالية. النظام يوفر:</p>
+                <ul>
+                    <li>تسجيل حضور وانصراف دقيق</li>
+                    <li>تقارير تفصيلية عن الحضور</li>
+                    <li>إدارة كاملة للموظفين</li>
+                    <li>نظام مستخدمين متعدد الصلاحيات</li>
+                    <li>واجهة مستخدم سهلة ومبسطة</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
